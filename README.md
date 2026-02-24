@@ -2,6 +2,7 @@
 
 Versione corrente: `0.1.0`  
 Licenza: `GNU GPLv3` (vedi file `LICENSE`)
+Autore: `Emilio Paolo Castelluccio`
 
 Applicazione di gestione utenti basata su OpenLDAP con:
 - OpenLDAP come directory target
@@ -9,6 +10,10 @@ Applicazione di gestione utenti basata su OpenLDAP con:
 - Web app FastAPI per operazioni utente comuni (crea/lista/update password/delete)
 - Gestione gruppi LDAP (`groupOfNames`) da UI
 - Script di migrazione utenti (e opzionalmente gruppi) da LDAP legacy
+
+## Nota di trasparenza
+
+Parti del codice sono state sviluppate con supporto Codex.
 
 ## Avvio rapido
 
