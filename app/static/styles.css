@@ -1,5 +1,6 @@
 :root {
   --page-max-width: 1100px;
+  --layout-min-width: 980px;
   --bg: #f4f6fb;
   --card: #ffffff;
   --text: #1f2937;
@@ -26,6 +27,8 @@ body {
   font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
   color: var(--text);
   background: #f4f6fb;
+  min-width: var(--layout-min-width);
+  overflow-x: auto;
 }
 
 body.members-modal-open {
@@ -33,21 +36,22 @@ body.members-modal-open {
 }
 
 .container {
+  min-width: var(--layout-min-width);
   max-width: var(--page-max-width);
   margin: 0 auto;
   padding: 0 1rem;
 }
 
 .fixed-top-shell {
-  position: fixed;
+  position: sticky;
   top: 0;
-  left: 0;
-  right: 0;
+  min-width: var(--layout-min-width);
   z-index: 1000;
   padding: 0;
 }
 
 .fixed-top-inner {
+  min-width: var(--layout-min-width);
   max-width: var(--page-max-width);
   margin: 0 auto;
   padding: 0.8rem 1rem 0.7rem 1rem;
@@ -59,7 +63,7 @@ body.members-modal-open {
 }
 
 .page-content {
-  padding-top: 190px;
+  padding-top: 1rem;
 }
 
 header {
@@ -76,18 +80,22 @@ header {
 .brand-text {
   margin-left: auto;
   text-align: right;
+  flex: 1 1 auto;
+  min-width: 0;
 }
 
 .brand-row h1 {
   margin: 0;
   font-size: 1.6rem;
   line-height: 1.1;
+  white-space: nowrap;
 }
 
 .brand-text p {
   margin: 0.2rem 0 0 0;
   font-size: 0.95rem;
   color: #475569;
+  white-space: nowrap;
 }
 
 .brand-logo-link {
@@ -269,6 +277,22 @@ td {
   border-top: 0 !important;
 }
 
+#users-table {
+  table-layout: fixed;
+  min-width: 860px;
+}
+
+.users-table-wrap {
+  width: 100%;
+  overflow-x: auto;
+}
+
+#users-table col.actions-col {
+  width: 156px;
+  min-width: 156px;
+  max-width: 156px;
+}
+
 .cell-shift-one-line {
   padding-top: 2.6rem;
 }
@@ -403,26 +427,26 @@ details summary {
   }
 
   .fixed-top-inner {
-    border-radius: 0;
-    border-left: 0;
-    border-right: 0;
-    padding-bottom: 0.6rem;
+    border-radius: 12px;
+    border-left: 1px solid var(--border);
+    border-right: 1px solid var(--border);
+    padding-bottom: 0.7rem;
   }
 
   .page-content {
-    padding-top: 230px;
+    padding-top: 1rem;
   }
 
   .flash-stack {
-    top: 148px;
-    right: 0.75rem;
-    width: calc(100% - 1.5rem);
+    top: 118px;
+    right: 1rem;
+    width: min(420px, calc(100% - 2rem));
   }
 
   .brand-row {
-    align-items: stretch;
-    flex-direction: column;
-    gap: 0.4rem;
+    align-items: center;
+    flex-direction: row;
+    gap: 0.8rem;
   }
 
   .brand-row h1 {
@@ -430,47 +454,31 @@ details summary {
   }
 
   .brand-logo {
-    height: 64px;
+    height: 80px;
     width: auto;
   }
 
   .top-nav {
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
   }
 
   .filter-form {
-    grid-template-columns: 1fr;
-  }
-
-  .inline-form {
-    display: flex;
-    width: 100%;
-  }
-
-  .member-row {
-    flex-direction: column;
-    align-items: flex-start;
-  }
-
-  .inline-form input,
-  .inline-form select,
-  .inline-form button {
-    width: 100%;
+    grid-template-columns: minmax(280px, 1fr) auto;
   }
 
   .users-toolbar {
-    flex-direction: column;
-    align-items: stretch;
+    flex-direction: row;
+    align-items: flex-end;
   }
 
   .users-toolbar-form {
     width: 100%;
-    flex-direction: column;
-    align-items: stretch;
+    flex-direction: row;
+    align-items: flex-end;
   }
 
   .users-toolbar-form label:first-child {
-    min-width: 0;
+    min-width: 280px;
   }
 }
 
@@ -825,12 +833,16 @@ details summary {
 
 .user-actions .mini-link-btn,
 .user-actions .inline-form button {
-  width: 130px;
+  width: 100%;
+  min-width: 130px;
   margin: 0;
+  flex-shrink: 0;
 }
 
 .user-actions .inline-form {
   margin: 0;
+  width: 130px;
+  flex: 0 0 auto;
 }
 
 @media (max-width: 768px) {

@@ -27,13 +27,20 @@
   </div>
   <p class="meta">Totale trovati: {{ total_users }} - Pagina {{ current_page }} di {{ total_pages }}</p>
   {% if users %}
+  <div class="users-table-wrap">
   <table id="users-table">
+    <colgroup>
+      <col class="user-col" />
+      <col class="contacts-col" />
+      <col class="management-col" />
+      <col class="actions-col" />
+    </colgroup>
     <thead>
       <tr>
         <th>Utente</th>
         <th>Contatti</th>
         <th>Gestione</th>
-        <th>Azioni</th>
+        <th class="user-actions-header">Azioni</th>
       </tr>
     </thead>
     <tbody>
@@ -75,6 +82,7 @@
       {% endfor %}
     </tbody>
   </table>
+  </div>
 
   {% for user in users %}
   {% set user_groups = groups_map.get(user.uid, []) %}

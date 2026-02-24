@@ -1,7 +1,7 @@
 services:
   openldap:
     image: osixia/openldap:1.5.0
-    container_name: gestan-openldap
+    container_name: ldapcc-openldap
     environment:
       LDAP_ORGANISATION: "Gestan"
       LDAP_DOMAIN: "example.org"
@@ -21,7 +21,7 @@ services:
 
   phpldapadmin:
     image: osixia/phpldapadmin:0.9.0
-    container_name: gestan-phpldapadmin
+    container_name: ldapcc-phpldapadmin
     environment:
       PHPLDAPADMIN_LDAP_HOSTS: openldap
       PHPLDAPADMIN_HTTPS: "false"
@@ -39,7 +39,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: gestan-app
+    container_name: ldapcc-app
     env_file:
       - .env
     ports:
