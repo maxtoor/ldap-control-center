@@ -1,0 +1,390 @@
+{% extends "base.html" %}
+
+{% block content %}
+{% set groups_map = groups_by_user_uid|default({}) %}
+{% set group_choices_safe = group_choices|default([]) %}
+<section class="card">
+  <div class="users-toolbar">
+    <form method="get" action="/users" class="filter-form users-toolbar-form" autocomplete="off">
+      <label>
+        Cerca utenti (nome, email, tipologia, sede di lavoro, stato)
+        <div class="search-input-wrap">
+          <span class="search-icon" aria-hidden="true">🔎</span>
+          <input name="q" value="{{ q }}" placeholder="es. rossi, Catania, Attivo" data-bwignore="true" />
+          <button type="button" class="search-clear-btn" aria-label="Azzera filtro" title="Azzera filtro">×</button>
+        </div>
+      </label>
+      <label>
+        Elementi per pagina
+        <select name="page_size" onchange="this.form.requestSubmit()">
+          {% for size in page_size_options %}
+          <option value="{{ size }}" {% if page_size == size %}selected{% endif %}>{{ size }}</option>
+          {% endfor %}
+        </select>
+      </label>
+      <a class="action-link" href="/users/new">Nuovo utente</a>
+    </form>
+  </div>
+  <p class="meta">Totale trovati: {{ total_users }} - Pagina {{ current_page }} di {{ total_pages }}</p>
+  {% if users %}
+  <table id="users-table">
+    <thead>
+      <tr>
+        <th>Utente</th>
+        <th>Contatti</th>
+        <th>Gestione</th>
+        <th>Azioni</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for user in users %}
+      <tr class="user-name-row">
+        <td colspan="3" class="user-name-wide">
+          <strong>{{ user.sn }} {{ user.given_name }} ({{ user.uid }})</strong>
+        </td>
+        <td rowspan="2" class="user-actions-cell">
+          <div class="user-actions">
+            <button type="button" class="mini-link-btn" onclick="openUserGroupsModal('user-groups-modal-{{ loop.index }}')">Gruppi</button>
+            <button type="button" class="mini-link-btn" onclick="openUserEditModal('user-edit-modal-{{ loop.index }}')">Modifica</button>
+            <form method="post" action="/users/{{ user.uid }}/delete" class="inline-form" data-confirm-message="Confermi eliminazione utente {{ user.uid }}?" autocomplete="off">
+              <input type="hidden" name="q" value="{{ q }}" />
+              <input type="hidden" name="page" value="{{ current_page }}" />
+              <input type="hidden" name="page_size" value="{{ page_size }}" />
+              <button type="submit" class="danger">Elimina</button>
+            </form>
+          </div>
+        </td>
+      </tr>
+      <tr class="user-detail-row">
+        <td>
+          <div>Tipo: {{ user.employee_type }}</div>
+          <div>Ruolo: {{ user.title }}</div>
+          <div>Sede di lavoro: {{ user.office_name }}</div>
+        </td>
+        <td>
+          <div>Email: {{ user.mail }}</div>
+          <div>Tel: {{ user.telephone_number }}</div>
+          <div>Cell: {{ user.mobile }}</div>
+        </td>
+        <td>
+          <div>Stato: {{ user.user_status }}</div>
+          <div>Inizio: {{ user.employment_start }}</div>
+          <div>Fine: {{ user.employment_end }}</div>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  {% for user in users %}
+  {% set user_groups = groups_map.get(user.uid, []) %}
+  <div id="user-groups-modal-{{ loop.index }}" class="members-modal-overlay" hidden onclick="if (event.target === this) closeUserGroupsModal('user-groups-modal-{{ loop.index }}')">
+    <div class="members-modal-card group-members-modal-card" role="dialog" aria-modal="true" aria-labelledby="user-groups-modal-title-{{ loop.index }}">
+      <div class="section-head">
+        <h2 id="user-groups-modal-title-{{ loop.index }}">Gruppi utente {{ user.uid }}</h2>
+        <button type="button" class="modal-cancel" onclick="closeUserGroupsModal('user-groups-modal-{{ loop.index }}')">Chiudi</button>
+      </div>
+
+      <form method="post" action="/users/groups/add" class="inline-form members-add-form" autocomplete="off">
+        <input type="hidden" name="uid" value="{{ user.uid }}" />
+        <input type="hidden" name="q" value="{{ q }}" />
+        <input type="hidden" name="page" value="{{ current_page }}" />
+        <input type="hidden" name="page_size" value="{{ page_size }}" />
+        <div class="member-input-wrap">
+          <input name="group_cn" class="group-cn-input" placeholder="Scrivi o scegli un gruppo (cn)" required />
+          <div class="member-suggestions" hidden></div>
+        </div>
+        <button type="submit">Aggiungi gruppo</button>
+      </form>
+
+      <div class="member-filter-wrap search-input-wrap">
+        <span class="search-icon" aria-hidden="true">🔎</span>
+        <input type="text" class="member-filter-input" placeholder="Filtra gruppi assegnati" />
+        <button type="button" class="search-clear-btn member-filter-clear-btn" aria-label="Azzera filtro gruppi" title="Azzera filtro gruppi">×</button>
+      </div>
+
+      <div class="members-list">
+        {% if user_groups %}
+        {% for group_cn in user_groups %}
+        <div class="member-row" data-member-search="{{ group_cn|lower|e }}">
+          <span>{{ group_cn }}</span>
+          <form method="post" action="/users/groups/remove" class="inline-form" autocomplete="off">
+            <input type="hidden" name="uid" value="{{ user.uid }}" />
+            <input type="hidden" name="group_cn" value="{{ group_cn }}" />
+            <input type="hidden" name="q" value="{{ q }}" />
+            <input type="hidden" name="page" value="{{ current_page }}" />
+            <input type="hidden" name="page_size" value="{{ page_size }}" />
+            <button type="submit" class="danger">Rimuovi</button>
+          </form>
+        </div>
+        {% endfor %}
+        {% else %}
+        <p class="meta">Nessun gruppo assegnato.</p>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+  {% endfor %}
+
+  <select id="group-suggestion-source" hidden>
+    {% for group_cn in group_choices_safe %}
+    <option value="{{ group_cn }}" data-search="{{ group_cn|lower|e }}">{{ group_cn }}</option>
+    {% endfor %}
+  </select>
+
+  {% for user in users %}
+  <div id="user-edit-modal-{{ loop.index }}" class="members-modal-overlay" hidden onclick="if (event.target === this) closeUserEditModal('user-edit-modal-{{ loop.index }}')">
+    <div class="members-modal-card user-edit-modal-card" role="dialog" aria-modal="true" aria-labelledby="user-edit-modal-title-{{ loop.index }}">
+      <div class="section-head">
+        <h2 id="user-edit-modal-title-{{ loop.index }}">Modifica utente {{ user.uid }}</h2>
+        <button type="button" class="modal-cancel" onclick="closeUserEditModal('user-edit-modal-{{ loop.index }}')">Chiudi</button>
+      </div>
+
+      <form method="post" action="/users/{{ user.uid }}/edit" class="user-form" autocomplete="off">
+        <input type="hidden" name="q" value="{{ q }}" />
+        <input type="hidden" name="page" value="{{ current_page }}" />
+        <input type="hidden" name="page_size" value="{{ page_size }}" />
+
+        <fieldset class="form-section">
+          <legend>Identificativi</legend>
+          <div class="grid-form">
+            <label>Nome utente <input value="{{ user.uid }}" disabled /></label>
+            <label>Nome <input name="given_name" value="{{ user.given_name }}" required /></label>
+            <label>Cognome <input name="sn" value="{{ user.sn }}" required /></label>
+          </div>
+        </fieldset>
+
+        <fieldset class="form-section">
+          <legend>Professionale</legend>
+          <div class="grid-form">
+            <label>Tipologia rapporto <input name="employee_type" value="{{ user.employee_type }}" /></label>
+            <label>Qualifica/Mansione <input name="title" value="{{ user.title }}" /></label>
+            <label>Sede di lavoro <input name="office_name" value="{{ user.office_name }}" /></label>
+          </div>
+        </fieldset>
+
+        <fieldset class="form-section">
+          <legend>Contatti</legend>
+          <div class="grid-form">
+            <label>Email istituzionale <input type="email" name="mail" value="{{ user.mail }}" required /></label>
+            <label>Email privata <input type="email" name="personal_email" value="{{ user.personal_email }}" /></label>
+            <label>Telefono ufficio <input name="telephone_number" value="{{ user.telephone_number }}" /></label>
+            <label>Cellulare <input name="mobile" value="{{ user.mobile }}" /></label>
+          </div>
+        </fieldset>
+
+        <fieldset class="form-section">
+          <legend>Gestione</legend>
+          <div class="grid-form">
+            <label>
+              Stato utente
+              <select name="user_status">
+                <option value="" {% if not user.user_status %}selected{% endif %}>Seleziona stato</option>
+                <option value="Attivo" {% if user.user_status == "Attivo" %}selected{% endif %}>Attivo</option>
+                <option value="Cessato" {% if user.user_status == "Cessato" %}selected{% endif %}>Cessato</option>
+                <option value="Sospeso" {% if user.user_status == "Sospeso" %}selected{% endif %}>Sospeso</option>
+              </select>
+            </label>
+            <label>Data inizio rapporto <input type="date" name="employment_start" value="{{ user.employment_start }}" /></label>
+            <label>Data fine rapporto <input type="date" name="employment_end" value="{{ user.employment_end }}" /></label>
+            <label>Note <input name="notes" value="{{ user.notes }}" /></label>
+          </div>
+        </fieldset>
+
+        <div class="modal-actions">
+          <button type="button" class="modal-cancel" onclick="closeUserEditModal('user-edit-modal-{{ loop.index }}')">Annulla</button>
+          <button type="submit">Salva modifiche</button>
+        </div>
+      </form>
+    </div>
+  </div>
+  {% endfor %}
+  {% else %}
+  <p>Nessun utente trovato.</p>
+  {% endif %}
+  {% if total_pages > 1 %}
+  <div class="pager">
+    {% if current_page > 1 %}
+    <a href="/users?q={{ q }}&page={{ current_page - 1 }}&page_size={{ page_size }}">Precedente</a>
+    {% endif %}
+    {% if current_page < total_pages %}
+    <a href="/users?q={{ q }}&page={{ current_page + 1 }}&page_size={{ page_size }}">Successiva</a>
+    {% endif %}
+  </div>
+  {% endif %}
+</section>
+
+<script>
+  function openUserEditModal(id) {
+    const modal = document.getElementById(id);
+    if (!modal) return;
+    modal.removeAttribute("hidden");
+    document.body.classList.add("members-modal-open");
+  }
+
+  function closeUserEditModal(id) {
+    const modal = document.getElementById(id);
+    if (!modal) return;
+    modal.setAttribute("hidden", "");
+    if (document.querySelectorAll(".members-modal-overlay:not([hidden])").length === 0) {
+      document.body.classList.remove("members-modal-open");
+    }
+  }
+
+  function openUserGroupsModal(id) {
+    const modal = document.getElementById(id);
+    if (!modal) return;
+    modal.removeAttribute("hidden");
+    document.body.classList.add("members-modal-open");
+  }
+
+  function closeUserGroupsModal(id) {
+    const modal = document.getElementById(id);
+    if (!modal) return;
+    modal.setAttribute("hidden", "");
+    if (document.querySelectorAll(".members-modal-overlay:not([hidden])").length === 0) {
+      document.body.classList.remove("members-modal-open");
+    }
+  }
+
+  document.addEventListener("keydown", (event) => {
+    if (event.key !== "Escape") return;
+    document.querySelectorAll("[id^='user-edit-modal-']").forEach((modal) => {
+      modal.setAttribute("hidden", "");
+    });
+    document.querySelectorAll("[id^='user-groups-modal-']").forEach((modal) => {
+      modal.setAttribute("hidden", "");
+    });
+    if (document.querySelectorAll(".members-modal-overlay:not([hidden])").length === 0) {
+      document.body.classList.remove("members-modal-open");
+    }
+  });
+
+  (() => {
+    const form = document.querySelector("form.users-toolbar-form[action='/users']");
+    const input = form ? form.querySelector("input[name='q']") : null;
+    const clearButton = form ? form.querySelector(".search-clear-btn") : null;
+    if (!form || !input) return;
+    const focusKey = "ldapcc_focus_users_q";
+
+    if (sessionStorage.getItem(focusKey) === "1") {
+      sessionStorage.removeItem(focusKey);
+      input.focus();
+      const len = input.value.length;
+      input.setSelectionRange(len, len);
+    }
+
+    let timer = null;
+    const updateClearButton = () => {
+      if (!clearButton) return;
+      clearButton.hidden = input.value.trim().length === 0;
+    };
+
+    input.addEventListener("input", () => {
+      if (timer) clearTimeout(timer);
+      timer = setTimeout(() => {
+        sessionStorage.setItem(focusKey, "1");
+        form.requestSubmit();
+      }, 500);
+      updateClearButton();
+    });
+
+    if (clearButton) {
+      clearButton.addEventListener("click", () => {
+        input.value = "";
+        updateClearButton();
+        sessionStorage.setItem(focusKey, "1");
+        form.requestSubmit();
+      });
+    }
+
+    updateClearButton();
+  })();
+
+  (() => {
+    const source = document.getElementById("group-suggestion-source");
+    if (!source) return;
+    const dataset = Array.from(source.options).map((option) => ({
+      value: option.value,
+      label: option.textContent.trim(),
+      search: (option.dataset.search || "").toLowerCase(),
+    }));
+
+    const renderSuggestions = (input, box) => {
+      const query = input.value.trim().toLowerCase();
+      const matches = (
+        query.length < 1
+          ? dataset
+          : dataset.filter((item) => item.search.includes(query))
+      ).slice(0, 200);
+      if (!matches.length) {
+        box.hidden = true;
+        box.innerHTML = "";
+        return;
+      }
+
+      box.innerHTML = "";
+      matches.forEach((item) => {
+        const node = document.createElement("div");
+        node.className = "member-suggestion-item";
+        node.dataset.value = item.value;
+        node.textContent = item.label;
+        box.appendChild(node);
+      });
+      box.hidden = false;
+
+      box.querySelectorAll(".member-suggestion-item").forEach((node) => {
+        node.addEventListener("click", () => {
+          input.value = node.dataset.value || "";
+          box.hidden = true;
+          box.innerHTML = "";
+          input.focus();
+        });
+      });
+    };
+
+    document.querySelectorAll("[id^='user-groups-modal-'] .members-add-form").forEach((form) => {
+      const input = form.querySelector(".group-cn-input");
+      const box = form.querySelector(".member-suggestions");
+      if (!input || !box) return;
+
+      input.addEventListener("input", () => renderSuggestions(input, box));
+      input.addEventListener("focus", () => renderSuggestions(input, box));
+      input.addEventListener("blur", () => {
+        setTimeout(() => {
+          box.hidden = true;
+        }, 150);
+      });
+    });
+  })();
+
+  (() => {
+    document.querySelectorAll("[id^='user-groups-modal-'] .members-modal-card").forEach((card) => {
+      const filterInput = card.querySelector(".member-filter-input");
+      const clearFilterButton = card.querySelector(".member-filter-clear-btn");
+      const rows = Array.from(card.querySelectorAll(".member-row[data-member-search]"));
+      if (!filterInput || !rows.length) return;
+
+      const applyGroupFilter = () => {
+        const query = filterInput.value.trim().toLowerCase();
+        rows.forEach((row) => {
+          const haystack = row.dataset.memberSearch || "";
+          row.hidden = !!query && !haystack.includes(query);
+        });
+        if (clearFilterButton) clearFilterButton.hidden = query.length === 0;
+      };
+
+      filterInput.addEventListener("input", applyGroupFilter);
+      if (clearFilterButton) {
+        clearFilterButton.addEventListener("click", () => {
+          filterInput.value = "";
+          applyGroupFilter();
+          filterInput.focus();
+        });
+      }
+      applyGroupFilter();
+    });
+  })();
+
+</script>
+{% endblock %}

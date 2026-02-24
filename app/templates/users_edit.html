@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+
+{% block content %}
+<section class="card narrow-card">
+  <div class="section-head">
+    <h2>Modifica utente: {{ user.uid }}</h2>
+    <a class="action-link" href="/users?q={{ q }}&page={{ page }}&page_size={{ page_size }}">Torna alla lista</a>
+  </div>
+  <form method="post" action="/users/{{ user.uid }}/edit" class="user-form" autocomplete="off">
+    <input type="hidden" name="q" value="{{ q }}" />
+    <input type="hidden" name="page" value="{{ page }}" />
+    <input type="hidden" name="page_size" value="{{ page_size }}" />
+
+    <fieldset class="form-section">
+      <legend>1. Informazioni Identificative</legend>
+      <div class="grid-form">
+        <label>Nome utente <input value="{{ user.uid }}" disabled /></label>
+        <label>Nome <input name="given_name" value="{{ user.given_name }}" required /></label>
+        <label>Cognome <input name="sn" value="{{ user.sn }}" required /></label>
+      </div>
+    </fieldset>
+
+    <fieldset class="form-section">
+      <legend>2. Informazioni Professionali e Affiliazione</legend>
+      <div class="grid-form">
+        <label>Tipologia rapporto <input name="employee_type" value="{{ user.employee_type }}" /></label>
+        <label>Qualifica/Mansione <input name="title" value="{{ user.title }}" /></label>
+        <label>Sede di lavoro <input name="office_name" value="{{ user.office_name }}" /></label>
+      </div>
+    </fieldset>
+
+    <fieldset class="form-section">
+      <legend>3. Contatti e Reperibilita</legend>
+      <div class="grid-form">
+        <label>Email istituzionale <input type="email" name="mail" value="{{ user.mail }}" required /></label>
+        <label>Email privata <input type="email" name="personal_email" value="{{ user.personal_email }}" /></label>
+        <label>Telefono ufficio <input name="telephone_number" value="{{ user.telephone_number }}" /></label>
+        <label>Cellulare <input name="mobile" value="{{ user.mobile }}" /></label>
+      </div>
+    </fieldset>
+
+    <fieldset class="form-section">
+      <legend>4. Gestione e Sicurezza</legend>
+      <div class="grid-form">
+        <label>
+          Stato utente
+          <select name="user_status">
+            <option value="" {% if not user.user_status %}selected{% endif %}>Seleziona stato</option>
+            <option value="Attivo" {% if user.user_status == "Attivo" %}selected{% endif %}>Attivo</option>
+            <option value="Cessato" {% if user.user_status == "Cessato" %}selected{% endif %}>Cessato</option>
+            <option value="Sospeso" {% if user.user_status == "Sospeso" %}selected{% endif %}>Sospeso</option>
+          </select>
+        </label>
+        <label>Data inizio rapporto <input type="date" name="employment_start" value="{{ user.employment_start }}" /></label>
+        <label>Data fine rapporto <input type="date" name="employment_end" value="{{ user.employment_end }}" /></label>
+        <label>Note <input name="notes" value="{{ user.notes }}" /></label>
+      </div>
+    </fieldset>
+
+    <button type="submit">Salva modifiche</button>
+  </form>
+</section>
+{% endblock %}

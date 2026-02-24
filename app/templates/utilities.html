@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+
+{% block content %}
+<section class="card narrow-card">
+  <h2>Utility import LDAP legacy</h2>
+  <form method="post" action="/utilities/import-legacy" class="user-form" autocomplete="off">
+    <fieldset class="form-section">
+      <legend>Opzioni import</legend>
+      <label class="check-row">
+        <input type="checkbox" name="dry_run" value="true" {% if dry_run %}checked{% endif %} />
+        Simulazione (`--dry-run`)
+      </label>
+      <label class="check-row">
+        <input type="checkbox" name="include_groups" value="true" {% if include_groups %}checked{% endif %} />
+        Includi gruppi (`--include-groups`)
+      </label>
+      <label class="check-row">
+        <input type="checkbox" name="debug_groups" value="true" {% if debug_groups %}checked{% endif %} />
+        Debug gruppi (`--debug-groups`)
+      </label>
+      <label>
+        Filtro gruppi
+        <input name="groups_filter" value="{{ groups_filter }}" />
+      </label>
+    </fieldset>
+    <div>
+      <button type="submit">Esegui import</button>
+    </div>
+  </form>
+</section>
+
+{% if command %}
+<section class="card">
+  <h2>Risultato esecuzione</h2>
+  <p class="meta">Comando: <code>{{ command }}</code></p>
+  <p class="meta">
+    Exit code:
+    {% if exit_code is not none %}
+    <strong>{{ exit_code }}</strong>
+    {% else %}
+    <strong>n/d</strong>
+    {% endif %}
+  </p>
+  <pre class="output-box">{{ output }}</pre>
+</section>
+{% endif %}
+{% endblock %}

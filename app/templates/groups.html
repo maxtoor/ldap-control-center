@@ -1,0 +1,304 @@
+{% extends "base.html" %}
+
+{% block content %}
+{% set member_map = member_cn_by_uid|default({}) %}
+{% set member_name_map = member_name_by_uid|default({}) %}
+{% set sorted_members_map = sorted_group_members_by_cn|default({}) %}
+<section class="card">
+  <div class="users-toolbar">
+    <form method="get" action="/groups" class="filter-form users-toolbar-form" autocomplete="off">
+      <label>
+        Cerca gruppi (cn, descrizione, membri)
+        <div class="search-input-wrap">
+          <span class="search-icon" aria-hidden="true">🔎</span>
+          <input name="q" value="{{ q }}" placeholder="es. admin o supporto" data-bwignore="true" />
+          <button type="button" class="search-clear-btn" aria-label="Azzera filtro" title="Azzera filtro">×</button>
+        </div>
+      </label>
+      <label>
+        Elementi per pagina
+        <select name="page_size" onchange="this.form.requestSubmit()">
+          {% for size in page_size_options %}
+          <option value="{{ size }}" {% if page_size == size %}selected{% endif %}>{{ size }}</option>
+          {% endfor %}
+        </select>
+      </label>
+      <a class="action-link" href="/groups/new">Nuovo gruppo</a>
+    </form>
+  </div>
+  <p class="meta">Totale trovati: {{ total_groups }} - Pagina {{ current_page }} di {{ total_pages }}</p>
+  {% if groups %}
+  <div class="groups-table-wrap">
+  <table id="groups-table" class="groups-table">
+    <thead>
+      <tr>
+        <th>Gruppo</th>
+        <th>Membri</th>
+        <th>Azioni</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for group in groups %}
+      <tr>
+        <td>
+          <div><strong>{{ group.cn }}</strong></div>
+          <div class="group-description">{{ group.description if group.description else "Nessuna descrizione" }}</div>
+        </td>
+        <td>
+          <span>{{ group.members|length }} membri</span>
+        </td>
+        <td>
+          <div class="group-actions">
+            <button type="button" class="mini-link-btn" onclick="openMembersModal('members-modal-{{ loop.index }}')">Modifica membri</button>
+            <form method="post" action="/groups/delete" class="inline-form" data-confirm-message="Confermi eliminazione gruppo {{ group.cn }}?" autocomplete="off">
+              <input type="hidden" name="group_cn" value="{{ group.cn }}" />
+              <input type="hidden" name="q" value="{{ q }}" />
+              <input type="hidden" name="page" value="{{ current_page }}" />
+              <input type="hidden" name="page_size" value="{{ page_size }}" />
+              <button type="submit" class="danger">Elimina gruppo</button>
+            </form>
+          </div>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  </div>
+
+  {% for group in groups %}
+  <div id="members-modal-{{ loop.index }}" class="members-modal-overlay" hidden onclick="if (event.target === this) closeMembersModal('members-modal-{{ loop.index }}')">
+    <div class="members-modal-card group-members-modal-card" role="dialog" aria-modal="true" aria-labelledby="members-modal-title-{{ loop.index }}">
+      <div class="section-head">
+        <h2 id="members-modal-title-{{ loop.index }}">Membri gruppo {{ group.cn }}</h2>
+        <button type="button" class="modal-cancel members-modal-close" onclick="closeMembersModal('members-modal-{{ loop.index }}')">Chiudi</button>
+      </div>
+
+      <form method="post" action="/groups/members/add" class="inline-form members-add-form" autocomplete="off">
+        <input type="hidden" name="group_cn" value="{{ group.cn }}" />
+        <input type="hidden" name="q" value="{{ q }}" />
+        <input type="hidden" name="page" value="{{ current_page }}" />
+        <input type="hidden" name="page_size" value="{{ page_size }}" />
+        <div class="member-input-wrap">
+          <input name="member_uid" class="member-uid-input" placeholder="Scrivi cognome o UID membro" required />
+          <div class="member-suggestions" hidden></div>
+        </div>
+        <button type="submit">Aggiungi membro</button>
+      </form>
+
+      <div class="member-filter-wrap search-input-wrap">
+        <span class="search-icon" aria-hidden="true">🔎</span>
+        <input type="text" class="member-filter-input" placeholder="Cerca membro per cognome, nome o uid" />
+        <button type="button" class="search-clear-btn member-filter-clear-btn" aria-label="Azzera filtro membri" title="Azzera filtro membri">×</button>
+      </div>
+      <div class="members-list">
+        {% set sorted_members = sorted_members_map.get(group.cn, group.members) %}
+        {% if sorted_members %}
+        {% for member_uid in sorted_members %}
+        {% set member_label = (member_name_map.get(member_uid) or member_map.get(member_uid) or member_uid) %}
+        <div class="member-row" data-member-search="{{ (member_label ~ ' ' ~ member_uid)|lower|e }}">
+          <span>
+            {{ member_label }} ({{ member_uid }})
+          </span>
+          <form method="post" action="/groups/members/remove" class="inline-form" autocomplete="off">
+            <input type="hidden" name="group_cn" value="{{ group.cn }}" />
+            <input type="hidden" name="member_uid" value="{{ member_uid }}" />
+            <input type="hidden" name="q" value="{{ q }}" />
+            <input type="hidden" name="page" value="{{ current_page }}" />
+            <input type="hidden" name="page_size" value="{{ page_size }}" />
+            <button type="submit" class="danger">Rimuovi</button>
+          </form>
+        </div>
+        {% endfor %}
+        {% else %}
+        <p class="meta">Nessun membro nel gruppo.</p>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+  {% endfor %}
+  <select id="member-suggestion-source" hidden>
+    {% if users_for_member_suggestions is defined and users_for_member_suggestions %}
+      {% for candidate in users_for_member_suggestions %}
+      <option value="{{ candidate.uid }}" data-search="{{ (candidate.sn ~ ' ' ~ candidate.given_name ~ ' ' ~ candidate.uid ~ ' ' ~ candidate.cn)|lower|e }}">
+        {{ candidate.sn }} {{ candidate.given_name }} ({{ candidate.uid }})
+      </option>
+      {% endfor %}
+    {% else %}
+      {% for uid, cn in member_map|dictsort %}
+      <option value="{{ uid }}" data-search="{{ (cn ~ ' ' ~ uid)|lower|e }}">
+        {{ cn }} ({{ uid }})
+      </option>
+      {% endfor %}
+    {% endif %}
+  </select>
+  {% else %}
+  <p>Nessun gruppo trovato.</p>
+  {% endif %}
+  {% if total_pages > 1 %}
+  <div class="pager">
+    {% if current_page > 1 %}
+    <a href="/groups?q={{ q }}&page={{ current_page - 1 }}&page_size={{ page_size }}">Precedente</a>
+    {% endif %}
+    {% if current_page < total_pages %}
+    <a href="/groups?q={{ q }}&page={{ current_page + 1 }}&page_size={{ page_size }}">Successiva</a>
+    {% endif %}
+  </div>
+  {% endif %}
+</section>
+
+<script>
+  function openMembersModal(id) {
+    const modal = document.getElementById(id);
+    if (!modal) return;
+    modal.removeAttribute("hidden");
+    document.body.classList.add("members-modal-open");
+  }
+
+  function closeMembersModal(id) {
+    const modal = document.getElementById(id);
+    if (!modal) return;
+    modal.setAttribute("hidden", "");
+    document.body.classList.remove("members-modal-open");
+  }
+
+  document.addEventListener("keydown", (event) => {
+    if (event.key !== "Escape") return;
+    document.querySelectorAll(".members-modal-overlay").forEach((modal) => {
+      if (!modal.hasAttribute("hidden")) {
+        modal.setAttribute("hidden", "");
+      }
+    });
+    document.body.classList.remove("members-modal-open");
+  });
+
+  (() => {
+    const form = document.querySelector("form.users-toolbar-form[action='/groups']");
+    const input = form ? form.querySelector("input[name='q']") : null;
+    const clearButton = form ? form.querySelector(".search-clear-btn") : null;
+    if (!form || !input) return;
+    const focusKey = "ldapcc_focus_groups_q";
+
+    if (sessionStorage.getItem(focusKey) === "1") {
+      sessionStorage.removeItem(focusKey);
+      input.focus();
+      const len = input.value.length;
+      input.setSelectionRange(len, len);
+    }
+
+    let timer = null;
+    const updateClearButton = () => {
+      if (!clearButton) return;
+      clearButton.hidden = input.value.trim().length === 0;
+    };
+
+    input.addEventListener("input", () => {
+      if (timer) clearTimeout(timer);
+      timer = setTimeout(() => {
+        sessionStorage.setItem(focusKey, "1");
+        form.requestSubmit();
+      }, 500);
+      updateClearButton();
+    });
+
+    if (clearButton) {
+      clearButton.addEventListener("click", () => {
+        input.value = "";
+        updateClearButton();
+        sessionStorage.setItem(focusKey, "1");
+        form.requestSubmit();
+      });
+    }
+
+    updateClearButton();
+  })();
+
+  (() => {
+    const source = document.getElementById("member-suggestion-source");
+    if (!source) return;
+    const dataset = Array.from(source.options).map((option) => ({
+      uid: option.value,
+      label: option.textContent.trim(),
+      search: (option.dataset.search || "").toLowerCase(),
+    }));
+
+    const renderSuggestions = (input, box) => {
+      const query = input.value.trim().toLowerCase();
+      if (query.length < 2) {
+        box.hidden = true;
+        box.innerHTML = "";
+        return;
+      }
+
+      const matches = dataset.filter((item) => item.search.includes(query)).slice(0, 10);
+      if (!matches.length) {
+        box.hidden = true;
+        box.innerHTML = "";
+        return;
+      }
+
+      box.innerHTML = "";
+      matches.forEach((item) => {
+        const node = document.createElement("div");
+        node.className = "member-suggestion-item";
+        node.dataset.uid = item.uid;
+        node.textContent = item.label;
+        box.appendChild(node);
+      });
+      box.hidden = false;
+
+      box.querySelectorAll(".member-suggestion-item").forEach((node) => {
+        node.addEventListener("click", () => {
+          input.value = node.dataset.uid || "";
+          box.hidden = true;
+          box.innerHTML = "";
+          input.focus();
+        });
+      });
+    };
+
+    document.querySelectorAll(".members-add-form").forEach((form) => {
+      const input = form.querySelector(".member-uid-input");
+      const box = form.querySelector(".member-suggestions");
+      if (!input || !box) return;
+
+      input.addEventListener("input", () => renderSuggestions(input, box));
+      input.addEventListener("focus", () => renderSuggestions(input, box));
+      input.addEventListener("blur", () => {
+        setTimeout(() => {
+          box.hidden = true;
+        }, 150);
+      });
+    });
+
+    document.querySelectorAll(".members-modal-card").forEach((card) => {
+      const filterInput = card.querySelector(".member-filter-input");
+      const clearFilterButton = card.querySelector(".member-filter-clear-btn");
+      const rows = Array.from(card.querySelectorAll(".member-row[data-member-search]"));
+      if (!filterInput || !rows.length) return;
+
+      const applyMemberFilter = () => {
+        const query = filterInput.value.trim().toLowerCase();
+        rows.forEach((row) => {
+          const haystack = row.dataset.memberSearch || "";
+          row.hidden = !!query && !haystack.includes(query);
+        });
+        if (clearFilterButton) {
+          clearFilterButton.hidden = query.length === 0;
+        }
+      };
+
+      filterInput.addEventListener("input", applyMemberFilter);
+
+      if (clearFilterButton) {
+        clearFilterButton.addEventListener("click", () => {
+          filterInput.value = "";
+          applyMemberFilter();
+          filterInput.focus();
+        });
+      }
+
+      applyMemberFilter();
+    });
+  })();
+</script>
+{% endblock %}

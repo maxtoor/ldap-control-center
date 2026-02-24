@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+
+{% block content %}
+<section class="card narrow-card">
+  <div class="section-head">
+    <h2>Crea nuovo gruppo</h2>
+    <a class="action-link" href="/groups">Vai alla lista</a>
+  </div>
+  <form method="post" action="/groups" class="grid-form" autocomplete="off">
+    <label>Nome gruppo (cn) <input name="group_cn" required /></label>
+    <label>Descrizione <input name="description" /></label>
+    <label>Membro iniziale (UID) <input name="initial_member_uid" placeholder="es. m.rossi" required /></label>
+    <button type="submit">Crea gruppo</button>
+  </form>
+</section>
+{% endblock %}

@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+
+{% block content %}
+<section class="card narrow-card">
+  <div class="section-head">
+    <h2>Crea nuovo utente</h2>
+    <a class="action-link" href="/users">Vai alla lista</a>
+  </div>
+  <form method="post" action="/users" class="user-form" autocomplete="off">
+    <fieldset class="form-section">
+      <legend>1. Informazioni Identificative</legend>
+      <div class="grid-form">
+        <label>Nome utente <input name="uid" required /></label>
+        <label>Nome <input name="given_name" required /></label>
+        <label>Cognome <input name="sn" required /></label>
+      </div>
+    </fieldset>
+
+    <fieldset class="form-section">
+      <legend>2. Informazioni Professionali e Affiliazione</legend>
+      <div class="grid-form">
+        <label>Tipologia rapporto <input name="employee_type" placeholder="es. Ricercatore TD" /></label>
+        <label>Qualifica/Mansione <input name="title" /></label>
+        <label>Sede di lavoro <input name="office_name" /></label>
+      </div>
+    </fieldset>
+
+    <fieldset class="form-section">
+      <legend>3. Contatti e Reperibilita</legend>
+      <div class="grid-form">
+        <label>Email istituzionale <input type="email" name="mail" required /></label>
+        <label>Email privata <input type="email" name="personal_email" /></label>
+        <label>Telefono ufficio <input name="telephone_number" /></label>
+        <label>Cellulare <input name="mobile" /></label>
+      </div>
+    </fieldset>
+
+    <fieldset class="form-section">
+      <legend>4. Gestione e Sicurezza</legend>
+      <div class="grid-form">
+        <label>
+          Stato utente
+          <select name="user_status">
+            <option value="">Seleziona stato</option>
+            <option value="Attivo">Attivo</option>
+            <option value="Cessato">Cessato</option>
+            <option value="Sospeso">Sospeso</option>
+          </select>
+        </label>
+        <label>Data inizio rapporto <input type="date" name="employment_start" /></label>
+        <label>Data fine rapporto <input type="date" name="employment_end" /></label>
+        <label>Password <input type="password" name="password" required /></label>
+        <label>Note <input name="notes" /></label>
+      </div>
+    </fieldset>
+
+    <button type="submit">Crea utente</button>
+  </form>
+</section>
+{% endblock %}

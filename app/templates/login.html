@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+
+{% block content %}
+<section class="card narrow-card">
+  <div class="section-head">
+    <h2>Accesso</h2>
+  </div>
+  <form method="post" action="/login" class="grid-form" autocomplete="off">
+    <input type="hidden" name="next" value="{{ next }}" />
+    <label>
+      Nome utente
+      <input name="username" required autofocus />
+    </label>
+    <label>
+      Password
+      <input type="password" name="password" required />
+    </label>
+    <button type="submit">Entra</button>
+  </form>
+</section>
+{% endblock %}

@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="it">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>{{ app_title }}</title>
+    <link rel="stylesheet" href="/static/styles.css?v=19" />
+  </head>
+  <body>
+    <div class="fixed-top-shell">
+      <div class="fixed-top-inner">
+        <header>
+          <div class="brand-row">
+            {% if app_logo_url %}
+            <a href="{{ app_logo_link }}" class="brand-logo-link">
+              <img src="{{ app_logo_url }}" alt="{{ app_title }} logo" class="brand-logo" />
+            </a>
+            {% endif %}
+            <div class="brand-text">
+              <h1>{{ app_title }}</h1>
+              <p>Gestione utenti su OpenLDAP</p>
+            </div>
+          </div>
+        </header>
+
+        {% if is_authenticated_request(request) %}
+        <nav class="top-nav">
+          <a href="/users" class="{% if active_page == 'users' %}active{% endif %}">Utenti</a>
+          <a href="/groups" class="{% if active_page == 'groups' %}active{% endif %}">Gruppi</a>
+          <a href="/utilities" class="{% if active_page == 'utilities' %}active{% endif %}">Utility</a>
+          <a href="/password/forgot" class="{% if active_page == 'password' %}active{% endif %}">Password</a>
+          <form method="post" action="/logout" class="top-nav-logout" autocomplete="off">
+            <button type="submit" class="top-nav-logout-btn">Esci</button>
+          </form>
+        </nav>
+        {% endif %}
+      </div>
+    </div>
+
+    {% if message or error %}
+    <div class="flash-stack" id="flash-stack">
+      {% if message %}
+      <div class="alert success dismissible">
+        <span>{{ message }}</span>
+        <button type="button" class="alert-close" aria-label="Chiudi avviso">×</button>
+      </div>
+      {% endif %}
+      {% if error %}
+      <div class="alert error dismissible">
+        <span>{{ error }}</span>
+        <button type="button" class="alert-close" aria-label="Chiudi avviso">×</button>
+      </div>
+      {% endif %}
+    </div>
+    {% endif %}
+
+    <main class="container page-content">
+      {% block content %}{% endblock %}
+    </main>
+
+    <div id="confirm-modal" class="modal-overlay" hidden>
+      <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="confirm-modal-title">
+        <h3 id="confirm-modal-title">Conferma eliminazione</h3>
+        <p id="confirm-modal-message">Confermi l'operazione?</p>
+        <div class="modal-actions">
+          <button type="button" id="confirm-modal-cancel" class="modal-cancel">Annulla</button>
+          <button type="button" id="confirm-modal-submit" class="danger">Elimina</button>
+        </div>
+      </div>
+    </div>
+
+	    <script>
+	      (() => {
+	        const stack = document.getElementById("flash-stack");
+	        if (!stack) return;
+	        const url = new URL(window.location.href);
+	        let shouldReplace = false;
+	        if (url.searchParams.has("message")) {
+	          url.searchParams.delete("message");
+	          shouldReplace = true;
+	        }
+	        if (url.searchParams.has("error")) {
+	          url.searchParams.delete("error");
+	          shouldReplace = true;
+	        }
+	        if (shouldReplace) {
+	          const nextUrl = url.pathname + (url.search ? url.search : "") + url.hash;
+	          window.history.replaceState({}, "", nextUrl);
+	        }
+	        stack.querySelectorAll(".dismissible").forEach((alertNode) => {
+	          const closeButton = alertNode.querySelector(".alert-close");
+	          let remainingMs = 5000;
+          let startedAt = Date.now();
+          let timerId = null;
+
+          const removeAlert = () => {
+            if (!alertNode.isConnected) return;
+            alertNode.remove();
+            if (!stack.querySelector(".dismissible")) stack.remove();
+          };
+
+          const startTimer = () => {
+            if (!alertNode.isConnected) return;
+            startedAt = Date.now();
+            timerId = setTimeout(removeAlert, remainingMs);
+          };
+
+          const pauseTimer = () => {
+            if (timerId === null) return;
+            clearTimeout(timerId);
+            timerId = null;
+            const elapsed = Date.now() - startedAt;
+            remainingMs = Math.max(0, remainingMs - elapsed);
+          };
+
+          if (closeButton) {
+            closeButton.addEventListener("click", () => {
+              if (timerId !== null) clearTimeout(timerId);
+              removeAlert();
+            });
+          }
+
+          alertNode.addEventListener("mouseenter", pauseTimer);
+          alertNode.addEventListener("mouseleave", () => {
+            if (remainingMs <= 0) {
+              removeAlert();
+              return;
+            }
+            if (timerId === null) startTimer();
+          });
+
+          startTimer();
+        });
+      })();
+
+    </script>
+
+    <script>
+      (() => {
+        const modal = document.getElementById("confirm-modal");
+        const messageNode = document.getElementById("confirm-modal-message");
+        const cancelButton = document.getElementById("confirm-modal-cancel");
+        const submitButton = document.getElementById("confirm-modal-submit");
+        if (!modal || !messageNode || !cancelButton || !submitButton) return;
+
+        let pendingForm = null;
+
+        const openModal = (form, message) => {
+          pendingForm = form;
+          messageNode.textContent = message || "Confermi l'operazione?";
+          modal.hidden = false;
+        };
+
+        const closeModal = () => {
+          modal.hidden = true;
+          pendingForm = null;
+        };
+
+        document.querySelectorAll("form[data-confirm-message]").forEach((form) => {
+          form.addEventListener("submit", (event) => {
+            event.preventDefault();
+            openModal(form, form.dataset.confirmMessage);
+          });
+        });
+
+        cancelButton.addEventListener("click", closeModal);
+        modal.addEventListener("click", (event) => {
+          if (event.target === modal) closeModal();
+        });
+
+        document.addEventListener("keydown", (event) => {
+          if (event.key === "Escape" && !modal.hidden) closeModal();
+        });
+
+        submitButton.addEventListener("click", () => {
+          if (!pendingForm) return;
+          const formToSubmit = pendingForm;
+          closeModal();
+          HTMLFormElement.prototype.submit.call(formToSubmit);
+        });
+      })();
+    </script>
+  </body>
+</html>

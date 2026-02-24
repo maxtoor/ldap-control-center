@@ -1,0 +1,4 @@
+dn: ou=users,dc=example,dc=org
+objectClass: top
+objectClass: organizationalUnit
+ou: users
