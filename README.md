@@ -25,6 +25,8 @@ cp .env.example .env
 
 Opzionale (branding header app in `.env`):
 - `APP_TITLE` titolo applicazione
+- `APP_SUBTITLE` sottotitolo nel riquadro header
+- `APP_COMPANY` azienda/istituzione riportata nel copyright
 - `APP_LOGO_URL` URL/logo path (es. `https://.../logo.png`)
 - `APP_LOGO_LINK` link cliccabile sul logo (es. `https://www.cnr.it` o `/users`)
 

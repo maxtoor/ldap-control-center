@@ -22,6 +22,8 @@ from fastapi.templating import Jinja2Templates
 from app.ldap_client import LDAPClient
 
 APP_TITLE = os.getenv("APP_TITLE", "LDAP Control Center")
+APP_SUBTITLE = os.getenv("APP_SUBTITLE", "Gestione utenti su OpenLDAP").strip() or "Gestione utenti su OpenLDAP"
+APP_COMPANY = os.getenv("APP_COMPANY", "Emilio Paolo Castelluccio").strip() or "Emilio Paolo Castelluccio"
 APP_LOGO_URL = os.getenv("APP_LOGO_URL", "").strip()
 APP_LOGO_LINK = os.getenv("APP_LOGO_LINK", "/").strip() or "/"
 PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -32,6 +34,8 @@ app = FastAPI(title=APP_TITLE)
 app.mount("/static", StaticFiles(directory="app/static"), name="static")
 templates = Jinja2Templates(directory="app/templates")
 templates.env.globals["app_title"] = APP_TITLE
+templates.env.globals["app_subtitle"] = APP_SUBTITLE
+templates.env.globals["app_company"] = APP_COMPANY
 templates.env.globals["app_logo_url"] = APP_LOGO_URL
 templates.env.globals["app_logo_link"] = APP_LOGO_LINK
 ldap_client = LDAPClient()
