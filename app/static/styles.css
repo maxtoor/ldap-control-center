@@ -655,10 +655,6 @@ details summary {
   opacity: 1;
 }
 
-.narrow-card {
-  max-width: 100%;
-}
-
 .mini-link {
   text-decoration: none;
   background: #e5e7eb;
