@@ -49,12 +49,55 @@
         </label>
         <label>Data inizio rapporto <input type="date" name="employment_start" /></label>
         <label>Data fine rapporto <input type="date" name="employment_end" /></label>
-        <label>Password <input type="password" name="password" required /></label>
-        <label>Note <input name="notes" /></label>
+        <label>
+          Password
+          <div class="password-input-wrap">
+            <input id="new-user-password" type="text" name="password" required />
+            <button type="button" id="regen-password-btn" class="password-reload-btn" aria-label="Rigenera password" title="Rigenera password">↻</button>
+          </div>
+        </label>
+        <label class="full-row">Note <input name="notes" /></label>
       </div>
     </fieldset>
 
     <button type="submit">Crea utente</button>
   </form>
 </section>
+<script>
+  (() => {
+    const passwordInput = document.getElementById("new-user-password");
+    const regenButton = document.getElementById("regen-password-btn");
+    if (!passwordInput || !regenButton) return;
+
+    const upper = "ABCDEFGHJKLMNPQRSTUVWXYZ";
+    const lower = "abcdefghijkmnopqrstuvwxyz";
+    const digits = "23456789";
+    const symbols = "!@#$%&*+-_=?.";
+    const all = upper + lower + digits + symbols;
+
+    const pick = (chars) => chars[Math.floor(Math.random() * chars.length)];
+
+    const shuffle = (arr) => {
+      for (let i = arr.length - 1; i > 0; i -= 1) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [arr[i], arr[j]] = [arr[j], arr[i]];
+      }
+      return arr;
+    };
+
+    const generateStrongPassword = (length = 16) => {
+      const chars = [pick(upper), pick(lower), pick(digits), pick(symbols)];
+      for (let i = chars.length; i < length; i += 1) chars.push(pick(all));
+      return shuffle(chars).join("");
+    };
+
+    const assignPassword = () => {
+      passwordInput.value = generateStrongPassword(16);
+      passwordInput.setSelectionRange(passwordInput.value.length, passwordInput.value.length);
+    };
+
+    if (!passwordInput.value.trim()) assignPassword();
+    regenButton.addEventListener("click", assignPassword);
+  })();
+</script>
 {% endblock %}

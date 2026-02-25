@@ -297,7 +297,7 @@ class LDAPClient:
         try:
             conn.search(
                 search_base=self.users_base_dn,
-                search_filter=f"(|(uid={escaped})(mail={escaped}))",
+                search_filter=f"(|(uid={escaped})(mail={escaped})(cn={escaped})(displayName={escaped}))",
                 attributes=["uid"],
             )
             if not conn.entries:

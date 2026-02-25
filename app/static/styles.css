@@ -176,6 +176,10 @@ h2 {
   align-items: end;
 }
 
+.grid-form .full-row {
+  grid-column: 1 / -1;
+}
+
 label {
   display: flex;
   flex-direction: column;
@@ -541,6 +545,116 @@ details summary {
   white-space: nowrap;
 }
 
+.password-actions {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.password-forgot-form {
+  grid-template-columns: minmax(320px, 1fr) auto;
+}
+
+.password-forgot-form > label {
+  min-width: 0;
+}
+
+.password-forgot-form input[name="identifier"] {
+  width: 100%;
+}
+
+.password-identifier-wrap {
+  position: relative;
+}
+
+.password-identifier-suggestions {
+  position: absolute;
+  top: calc(100% + 0.2rem);
+  left: 0;
+  right: 0;
+  z-index: 30;
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.12);
+  max-height: 240px;
+  overflow: auto;
+  padding: 0.2rem;
+}
+
+.password-identifier-suggestions[hidden] {
+  display: none !important;
+}
+
+.password-identifier-item {
+  width: 100%;
+  border: 0;
+  background: transparent;
+  color: var(--text);
+  text-align: left;
+  border-radius: 6px;
+  padding: 0.4rem 0.5rem;
+  display: block;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.password-identifier-item:hover {
+  background: #e2e8f0;
+}
+
+.password-link-alert {
+  margin-top: 0.95rem;
+}
+
+.password-link-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.6rem;
+  margin-bottom: 0.35rem;
+}
+
+.link-copy-wrap {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  min-width: 120px;
+  justify-content: flex-end;
+}
+
+.link-copy-btn {
+  width: 1.35rem;
+  height: 1.35rem;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: #e5e7eb;
+  color: #334155;
+  padding: 0;
+  line-height: 1;
+  font-size: 0.85rem;
+}
+
+.link-copy-btn:hover {
+  background: #cfd8e3;
+}
+
+.link-copy-feedback {
+  font-size: 0.78rem;
+  color: #166534;
+  opacity: 0;
+  transition: opacity 0.18s ease;
+  width: 80px;
+  text-align: right;
+  white-space: nowrap;
+}
+
+.link-copy-feedback.show {
+  opacity: 1;
+}
+
 .narrow-card {
   max-width: 100%;
 }
@@ -578,6 +692,35 @@ details summary {
 .user-form {
   display: grid;
   gap: 1rem;
+}
+
+.password-input-wrap {
+  position: relative;
+}
+
+.password-input-wrap input {
+  width: 100%;
+  padding-right: 2rem;
+}
+
+.password-reload-btn {
+  position: absolute;
+  top: 50%;
+  right: 0.35rem;
+  transform: translateY(-50%);
+  width: 1.35rem;
+  height: 1.35rem;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: #e5e7eb;
+  color: #334155;
+  padding: 0;
+  line-height: 1;
+  font-size: 0.95rem;
+}
+
+.password-reload-btn:hover {
+  background: #cfd8e3;
 }
 
 .form-section {
@@ -795,6 +938,10 @@ details summary {
   width: 100%;
 }
 
+.members-add-form .group-cn-input {
+  padding-right: 2rem;
+}
+
 .members-add-form button {
   flex-shrink: 0;
 }
@@ -818,6 +965,10 @@ details summary {
   max-height: 240px;
   overflow: auto;
   padding: 0.2rem;
+}
+
+.member-suggestions[hidden] {
+  display: none !important;
 }
 
 .member-suggestion-item {
@@ -882,15 +1033,22 @@ details summary {
 
 .user-actions .mini-link-btn,
 .user-actions .inline-form button {
-  width: 100%;
-  min-width: 130px;
+  width: 118px;
+  min-width: 118px;
+  max-width: 118px;
+  padding: 0.38rem 0.5rem;
+  font-size: 0.82rem;
+  line-height: 1.15;
   margin: 0;
+  margin-right: 0;
+  margin-bottom: 0;
+  display: block;
   flex-shrink: 0;
 }
 
 .user-actions .inline-form {
   margin: 0;
-  width: 130px;
+  width: 118px;
   flex: 0 0 auto;
 }
 

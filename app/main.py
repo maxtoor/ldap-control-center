@@ -198,6 +198,36 @@ def _smtp_is_configured() -> bool:
     return bool(SMTP_HOST and SMTP_FROM_EMAIL)
 
 
+def _password_identifier_choices() -> List[Dict[str, str]]:
+    try:
+        users = ldap_client.list_users()
+    except Exception:
+        return []
+
+    choices: List[Dict[str, str]] = []
+    for user in users:
+        uid = (user.uid or "").strip()
+        if not uid:
+            continue
+        full_name = " ".join(part for part in [user.sn, user.given_name] if (part or "").strip()).strip()
+        display_name = full_name or (user.cn or "").strip() or uid
+        mail = (user.mail or "").strip()
+        label = f"{display_name} ({uid})"
+        if mail:
+            label = f"{label} - {mail}"
+        search_parts = [display_name, uid, mail]
+        choices.append(
+            {
+                "value": uid,
+                "label": label,
+                "search": " ".join(part for part in search_parts if part).lower(),
+            }
+        )
+
+    choices.sort(key=lambda item: item["label"].lower())
+    return choices
+
+
 def _send_password_reset_email(recipient_email: str, recipient_label: str, reset_link: str) -> None:
     if not _smtp_is_configured():
         raise RuntimeError("SMTP non configurato (SMTP_HOST/SMTP_FROM_EMAIL mancanti).")
@@ -783,15 +813,26 @@ def edit_user(
 
 @app.get("/password/forgot")
 def password_forgot_page(request: Request, message: Optional[str] = None, error: Optional[str] = None):
+    is_admin_mode = _is_authenticated_request(request)
+    identifier_choices = _password_identifier_choices() if is_admin_mode else []
     return templates.TemplateResponse(
         request=request,
         name="password_forgot.html",
-        context={"message": message, "error": error, "active_page": "password"},
+        context={
+            "message": message,
+            "error": error,
+            "active_page": "password",
+            "is_admin_mode": is_admin_mode,
+            "identifier_choices": identifier_choices,
+            "identifier_value": "",
+        },
     )
 
 
 @app.post("/password/forgot")
-def password_forgot_submit(request: Request, identifier: str = Form(...)):
+def password_forgot_submit(request: Request, identifier: str = Form(...), action: str = Form("email")):
+    is_admin_mode = _is_authenticated_request(request)
+    identifier_choices = _password_identifier_choices() if is_admin_mode else []
     identifier_clean = identifier.strip()
     if not identifier_clean:
         return templates.TemplateResponse(
@@ -800,11 +841,20 @@ def password_forgot_submit(request: Request, identifier: str = Form(...)):
             context={
                 "error": "Inserisci nome utente o email istituzionale.",
                 "active_page": "password",
+                "is_admin_mode": is_admin_mode,
+                "identifier_choices": identifier_choices,
+                "identifier_value": identifier_clean,
             },
         )
 
     uid = ldap_client.find_user_uid_by_identifier(identifier_clean)
     generated_link = None
+    normalized_action = (action or "email").strip().lower()
+    if normalized_action not in {"link", "email"}:
+        normalized_action = "email"
+    if not is_admin_mode:
+        normalized_action = "email"
+
     if uid:
         token = _create_password_reset_token(uid)
         reset_link = _build_reset_link(request, token)
@@ -816,27 +866,41 @@ def password_forgot_submit(request: Request, identifier: str = Form(...)):
                 cn_value = (user.cn or "").strip()
                 recipient_full_name = cn_value if cn_value and cn_value != uid else ""
             recipient_label = f"{recipient_full_name} ({uid})" if recipient_full_name else uid
-            if recipient_email:
-                _send_password_reset_email(recipient_email=recipient_email, recipient_label=recipient_label, reset_link=reset_link)
-                logger.warning("[PASSWORD_RESET_EMAIL_SENT] uid=%s to=%s", uid, recipient_email)
+            if normalized_action == "email":
+                if recipient_email:
+                    _send_password_reset_email(recipient_email=recipient_email, recipient_label=recipient_label, reset_link=reset_link)
+                    logger.warning("[PASSWORD_RESET_EMAIL_SENT] uid=%s to=%s", uid, recipient_email)
+                else:
+                    logger.warning("[PASSWORD_RESET_EMAIL_SKIPPED] uid=%s motivo=email mancante", uid)
             else:
-                logger.warning("[PASSWORD_RESET_EMAIL_SKIPPED] uid=%s motivo=email mancante", uid)
+                generated_link = reset_link
+                logger.warning("[PASSWORD_RESET_LINK_ADMIN] uid=%s link=%s", uid, generated_link)
         except Exception as exc:
             logger.error("[PASSWORD_RESET_EMAIL_ERROR] uid=%s error=%s", uid, exc)
 
-        if PASSWORD_RESET_SHOW_LINK:
+        if PASSWORD_RESET_SHOW_LINK and not generated_link:
             generated_link = reset_link
             logger.warning("[PASSWORD_RESET_LINK] uid=%s link=%s", uid, generated_link)
     else:
         logger.warning("[PASSWORD_RESET_IGNORED] identifier_non_trovato=%s", identifier_clean)
 
+    if is_admin_mode and not uid:
+        message = "Utente non trovato."
+    elif normalized_action == "link" and uid:
+        message = "Link di reset generato."
+    else:
+        message = "Se l'account esiste, il link di reset e stato generato."
+
     return templates.TemplateResponse(
         request=request,
         name="password_forgot.html",
         context={
-            "message": "Se l'account esiste, il link di reset e stato generato.",
+            "message": message,
             "generated_link": generated_link,
             "active_page": "password",
+            "is_admin_mode": is_admin_mode,
+            "identifier_choices": identifier_choices,
+            "identifier_value": identifier_clean,
         },
     )
 
@@ -945,7 +1009,17 @@ def add_user_to_group_from_users_page(
     if not normalized_uid or not normalized_group_cn:
         return _redirect_to("/users", error="Utente o gruppo non valido.", q=q, page=page, page_size=page_size)
     try:
-        ldap_client.add_user_to_group(group_cn=normalized_group_cn, uid=normalized_uid)
+        available_groups = {group.cn.lower(): group.cn for group in ldap_client.list_groups() if group.cn}
+        selected_group_cn = available_groups.get(normalized_group_cn.lower())
+        if not selected_group_cn:
+            return _redirect_to(
+                "/users",
+                error="Seleziona un gruppo valido dalla lista.",
+                q=q,
+                page=page,
+                page_size=page_size,
+            )
+        ldap_client.add_user_to_group(group_cn=selected_group_cn, uid=normalized_uid)
         return _redirect_to("/users", message="Gruppo assegnato all'utente.", q=q, page=page, page_size=page_size)
     except Exception as exc:
         return _redirect_to("/users", error=str(exc), q=q, page=page, page_size=page_size)

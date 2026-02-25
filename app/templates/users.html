@@ -100,6 +100,7 @@
         <input type="hidden" name="page_size" value="{{ page_size }}" />
         <div class="member-input-wrap">
           <input name="group_cn" class="group-cn-input" placeholder="Scrivi o scegli un gruppo (cn)" required />
+          <button type="button" class="search-clear-btn group-cn-clear-btn" aria-label="Azzera gruppo" title="Azzera gruppo" hidden>×</button>
           <div class="member-suggestions" hidden></div>
         </div>
         <button type="submit">Aggiungi gruppo</button>
@@ -195,7 +196,7 @@
             </label>
             <label>Data inizio rapporto <input type="date" name="employment_start" value="{{ user.employment_start }}" /></label>
             <label>Data fine rapporto <input type="date" name="employment_end" value="{{ user.employment_end }}" /></label>
-            <label>Note <input name="notes" value="{{ user.notes }}" /></label>
+            <label class="full-row">Note <input name="notes" value="{{ user.notes }}" /></label>
           </div>
         </fieldset>
 
@@ -317,17 +318,31 @@
       label: option.textContent.trim(),
       search: (option.dataset.search || "").toLowerCase(),
     }));
+    const allowedGroupMap = new Map(dataset.map((item) => [item.value.toLowerCase(), item.value]));
+    const normalizeAllowedGroup = (value) => {
+      const normalized = (value || "").trim().toLowerCase();
+      if (!normalized) return "";
+      return allowedGroupMap.get(normalized) || "";
+    };
 
-    const renderSuggestions = (input, box) => {
+    const closeSuggestions = (box) => {
+      box.hidden = true;
+      box.innerHTML = "";
+    };
+
+    const renderSuggestions = (input, box, allowEmpty = false) => {
       const query = input.value.trim().toLowerCase();
+      if (!allowEmpty && query.length < 1) {
+        closeSuggestions(box);
+        return;
+      }
       const matches = (
         query.length < 1
           ? dataset
           : dataset.filter((item) => item.search.includes(query))
       ).slice(0, 200);
       if (!matches.length) {
-        box.hidden = true;
-        box.innerHTML = "";
+        closeSuggestions(box);
         return;
       }
 
@@ -342,26 +357,99 @@
       box.hidden = false;
 
       box.querySelectorAll(".member-suggestion-item").forEach((node) => {
+        node.addEventListener("mousedown", (event) => {
+          event.preventDefault();
+        });
         node.addEventListener("click", () => {
           input.value = node.dataset.value || "";
-          box.hidden = true;
-          box.innerHTML = "";
+          closeSuggestions(box);
           input.focus();
         });
       });
     };
 
-    document.querySelectorAll("[id^='user-groups-modal-'] .members-add-form").forEach((form) => {
+    const suggestionForms = Array.from(document.querySelectorAll("[id^='user-groups-modal-'] .members-add-form"));
+    suggestionForms.forEach((form) => {
       const input = form.querySelector(".group-cn-input");
       const box = form.querySelector(".member-suggestions");
+      const wrap = form.querySelector(".member-input-wrap");
+      const clearButton = form.querySelector(".group-cn-clear-btn");
       if (!input || !box) return;
+      let suppressNextFocusOpen = false;
 
-      input.addEventListener("input", () => renderSuggestions(input, box));
-      input.addEventListener("focus", () => renderSuggestions(input, box));
+      const updateClearButton = () => {
+        if (!clearButton) return;
+        clearButton.hidden = input.value.trim().length === 0;
+      };
+
+      input.addEventListener("input", () => {
+        input.setCustomValidity("");
+        renderSuggestions(input, box);
+        updateClearButton();
+      });
+      input.addEventListener("focus", () => {
+        if (suppressNextFocusOpen) {
+          suppressNextFocusOpen = false;
+        } else {
+          renderSuggestions(input, box, true);
+        }
+        updateClearButton();
+      });
       input.addEventListener("blur", () => {
         setTimeout(() => {
-          box.hidden = true;
+          const active = document.activeElement;
+          if (!wrap || !active || !wrap.contains(active)) {
+            const canonical = normalizeAllowedGroup(input.value);
+            input.value = canonical;
+            input.setCustomValidity("");
+            updateClearButton();
+            closeSuggestions(box);
+          }
         }, 150);
+      });
+      input.addEventListener("keydown", (event) => {
+        if (event.key === "Escape") closeSuggestions(box);
+      });
+      if (clearButton) {
+        clearButton.addEventListener("click", () => {
+          input.value = "";
+          closeSuggestions(box);
+          updateClearButton();
+          suppressNextFocusOpen = true;
+          const focusables = Array.from(
+            form.querySelectorAll("input, select, textarea, button, a[href], [tabindex]:not([tabindex='-1'])")
+          ).filter((el) => !el.disabled && el !== clearButton && el.offsetParent !== null);
+          const inputIndex = focusables.indexOf(input);
+          const nextFocusable = inputIndex >= 0 ? focusables[inputIndex + 1] : null;
+          if (nextFocusable) {
+            nextFocusable.focus();
+          } else {
+            input.focus();
+          }
+        });
+      }
+      form.addEventListener("submit", (event) => {
+        const canonical = normalizeAllowedGroup(input.value);
+        if (!canonical) {
+          event.preventDefault();
+          closeSuggestions(box);
+          input.setCustomValidity("Seleziona un gruppo presente nella lista.");
+          input.reportValidity();
+          input.focus();
+          return;
+        }
+        input.setCustomValidity("");
+        input.value = canonical;
+      });
+      updateClearButton();
+    });
+
+    document.addEventListener("click", (event) => {
+      suggestionForms.forEach((form) => {
+        const box = form.querySelector(".member-suggestions");
+        const wrap = form.querySelector(".member-input-wrap");
+        if (!box || !wrap) return;
+        if (!wrap.contains(event.target)) closeSuggestions(box);
       });
     });
   })();
