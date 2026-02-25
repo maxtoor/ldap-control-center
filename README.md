@@ -79,6 +79,12 @@ Credenziali web app default:
 - Username: `admin`
 - Password: `admin`
 
+## Installazione senza Docker
+
+E disponibile una guida completa per installare l'applicazione su Debian senza Docker, con OpenLDAP, Nginx e PHP-FPM:
+
+- [`docs/INSTALL_DEBIAN_NGINX_PHPFPM.md`](docs/INSTALL_DEBIAN_NGINX_PHPFPM.md)
+
 ## Aggiornamento stack
 
 Aggiornamento automatico completo (check versioni + backup + update + smoke test + rollback su errore):
