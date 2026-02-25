@@ -5,15 +5,15 @@
   <div class="section-head">
     <h2>Accesso</h2>
   </div>
-  <form method="post" action="/login" class="grid-form" autocomplete="off">
+  <form method="post" action="/login" class="grid-form" autocomplete="off" data-lpignore="true">
     <input type="hidden" name="next" value="{{ next }}" />
     <label>
       Nome utente
-      <input name="username" required autofocus />
+      <input name="username" required autofocus autocomplete="username" data-bwignore="true" data-1p-ignore="true" data-lpignore="true" />
     </label>
     <label>
       Password
-      <input type="password" name="password" required />
+      <input type="password" name="password" required autocomplete="current-password" data-bwignore="true" data-1p-ignore="true" data-lpignore="true" />
     </label>
     <button type="submit">Entra</button>
   </form>

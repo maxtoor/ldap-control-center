@@ -46,6 +46,16 @@ Invio email reset password:
 - `PASSWORD_RESET_TTL_MINUTES` validita token
 - `PASSWORD_RESET_SHOW_LINK` (`true` solo per test locale, mostra link anche a schermo)
 
+Policy password applicativa (configurabile da `.env`):
+- `PASSWORD_POLICY_MIN_LENGTH`
+- `PASSWORD_POLICY_REQUIRE_UPPER`
+- `PASSWORD_POLICY_REQUIRE_LOWER`
+- `PASSWORD_POLICY_REQUIRE_DIGIT`
+- `PASSWORD_POLICY_REQUIRE_SYMBOL`
+- `PASSWORD_POLICY_SYMBOLS`
+- `PASSWORD_POLICY_DISALLOW_USERNAME`
+- `PASSWORD_POLICY_BLOCK_COMMON`
+
 2. Avvia stack:
 
 ```bash

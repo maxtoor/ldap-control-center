@@ -52,6 +52,22 @@ SMTP_PASSWORD = os.getenv("SMTP_PASSWORD", "")
 SMTP_FROM_EMAIL = os.getenv("SMTP_FROM_EMAIL", "").strip()
 SMTP_FROM_NAME = os.getenv("SMTP_FROM_NAME", APP_TITLE).strip() or APP_TITLE
 SMTP_RESET_SUBJECT = os.getenv("SMTP_RESET_SUBJECT", "Reset password account LDAP").strip() or "Reset password account LDAP"
+PASSWORD_POLICY_MIN_LENGTH = max(1, int(os.getenv("PASSWORD_POLICY_MIN_LENGTH", "12")))
+PASSWORD_POLICY_REQUIRE_UPPER = os.getenv("PASSWORD_POLICY_REQUIRE_UPPER", "true").lower() in {"1", "true", "yes", "on"}
+PASSWORD_POLICY_REQUIRE_LOWER = os.getenv("PASSWORD_POLICY_REQUIRE_LOWER", "true").lower() in {"1", "true", "yes", "on"}
+PASSWORD_POLICY_REQUIRE_DIGIT = os.getenv("PASSWORD_POLICY_REQUIRE_DIGIT", "true").lower() in {"1", "true", "yes", "on"}
+PASSWORD_POLICY_REQUIRE_SYMBOL = os.getenv("PASSWORD_POLICY_REQUIRE_SYMBOL", "true").lower() in {"1", "true", "yes", "on"}
+PASSWORD_POLICY_SYMBOLS = os.getenv("PASSWORD_POLICY_SYMBOLS", "!@#$%&*+-_=?.")
+PASSWORD_POLICY_DISALLOW_USERNAME = os.getenv("PASSWORD_POLICY_DISALLOW_USERNAME", "true").lower() in {"1", "true", "yes", "on"}
+PASSWORD_POLICY_BLOCK_COMMON = os.getenv("PASSWORD_POLICY_BLOCK_COMMON", "true").lower() in {"1", "true", "yes", "on"}
+templates.env.globals["password_policy_min_length"] = PASSWORD_POLICY_MIN_LENGTH
+templates.env.globals["password_policy_require_upper"] = PASSWORD_POLICY_REQUIRE_UPPER
+templates.env.globals["password_policy_require_lower"] = PASSWORD_POLICY_REQUIRE_LOWER
+templates.env.globals["password_policy_require_digit"] = PASSWORD_POLICY_REQUIRE_DIGIT
+templates.env.globals["password_policy_require_symbol"] = PASSWORD_POLICY_REQUIRE_SYMBOL
+templates.env.globals["password_policy_symbols"] = PASSWORD_POLICY_SYMBOLS
+templates.env.globals["password_policy_disallow_username"] = PASSWORD_POLICY_DISALLOW_USERNAME
+templates.env.globals["password_policy_block_common"] = PASSWORD_POLICY_BLOCK_COMMON
 PREFERENCE_COOKIE_MAX_AGE = 60 * 60 * 24 * 365
 USERS_PAGE_SIZE_COOKIE = "users_page_size"
 GROUPS_PAGE_SIZE_COOKIE = "groups_page_size"
@@ -198,6 +214,37 @@ def _smtp_is_configured() -> bool:
     return bool(SMTP_HOST and SMTP_FROM_EMAIL)
 
 
+def _validate_password_policy(password: str, uid: str = "") -> Optional[str]:
+    value = password or ""
+    if len(value) < PASSWORD_POLICY_MIN_LENGTH:
+        return f"La password deve contenere almeno {PASSWORD_POLICY_MIN_LENGTH} caratteri."
+    if PASSWORD_POLICY_REQUIRE_UPPER and not any(ch.isupper() for ch in value):
+        return "La password deve contenere almeno una lettera maiuscola."
+    if PASSWORD_POLICY_REQUIRE_LOWER and not any(ch.islower() for ch in value):
+        return "La password deve contenere almeno una lettera minuscola."
+    if PASSWORD_POLICY_REQUIRE_DIGIT and not any(ch.isdigit() for ch in value):
+        return "La password deve contenere almeno un numero."
+    if PASSWORD_POLICY_REQUIRE_SYMBOL and not any(ch in PASSWORD_POLICY_SYMBOLS for ch in value):
+        return "La password deve contenere almeno un simbolo."
+    if PASSWORD_POLICY_DISALLOW_USERNAME:
+        uid_clean = (uid or "").strip()
+        if uid_clean and uid_clean.lower() in value.lower():
+            return "La password non puo contenere il nome utente."
+    if PASSWORD_POLICY_BLOCK_COMMON:
+        common_passwords = {
+            "password",
+            "password123",
+            "12345678",
+            "123456789",
+            "qwerty",
+            "qwerty123",
+            "admin123",
+        }
+        if value.lower() in common_passwords:
+            return "La password scelta e troppo comune."
+    return None
+
+
 def _password_identifier_choices() -> List[Dict[str, str]]:
     try:
         users = ldap_client.list_users()
@@ -226,6 +273,25 @@ def _password_identifier_choices() -> List[Dict[str, str]]:
 
     choices.sort(key=lambda item: item["label"].lower())
     return choices
+
+
+def _user_display_identity(uid: str) -> str:
+    uid_clean = (uid or "").strip()
+    if not uid_clean:
+        return ""
+    try:
+        user = ldap_client.get_user(uid_clean)
+    except Exception:
+        return uid_clean
+
+    given_name = (user.given_name or "").strip()
+    surname = (user.sn or "").strip()
+    full_name = " ".join(part for part in [given_name, surname] if part).strip()
+    if not full_name:
+        full_name = (user.cn or "").strip()
+    if not full_name or full_name == uid_clean:
+        return uid_clean
+    return f"{full_name} ({uid_clean})"
 
 
 def _send_password_reset_email(recipient_email: str, recipient_label: str, reset_link: str) -> None:
@@ -483,6 +549,7 @@ def users_new_page(
         context={
             "message": message,
             "error": error,
+            "form_values": {},
             "active_page": "users",
             "active_subpage": "users_new",
         },
@@ -692,6 +759,7 @@ def utility_import_legacy(
 
 @app.post("/users")
 def create_user(
+    request: Request,
     uid: str = Form(...),
     sn: str = Form(...),
     mail: str = Form(...),
@@ -708,6 +776,35 @@ def create_user(
     title: str = Form(""),
     notes: str = Form(""),
 ):
+    form_values = {
+        "uid": uid,
+        "sn": sn,
+        "mail": mail,
+        "given_name": given_name,
+        "telephone_number": telephone_number,
+        "mobile": mobile,
+        "employee_type": employee_type,
+        "user_status": user_status,
+        "employment_start": employment_start,
+        "employment_end": employment_end,
+        "personal_email": personal_email,
+        "office_name": office_name,
+        "title": title,
+        "notes": notes,
+    }
+
+    password_error = _validate_password_policy(password=password, uid=uid)
+    if password_error:
+        return templates.TemplateResponse(
+            request=request,
+            name="users_new.html",
+            context={
+                "error": password_error,
+                "form_values": form_values,
+                "active_page": "users",
+                "active_subpage": "users_new",
+            },
+        )
     try:
         ldap_client.create_user(
             uid=uid,
@@ -728,7 +825,16 @@ def create_user(
         )
         return _redirect_to("/users", message="Utente creato")
     except Exception as exc:
-        return _redirect_to("/users/new", error=str(exc))
+        return templates.TemplateResponse(
+            request=request,
+            name="users_new.html",
+            context={
+                "error": str(exc),
+                "form_values": form_values,
+                "active_page": "users",
+                "active_subpage": "users_new",
+            },
+        )
 
 
 @app.get("/users/{uid}/edit")
@@ -924,6 +1030,7 @@ def password_reset_page(token: str, request: Request, error: Optional[str] = Non
         context={
             "token": token,
             "uid": uid,
+            "display_identity": _user_display_identity(uid),
             "token_valid": True,
             "active_page": "password",
             "ttl_minutes": PASSWORD_RESET_TTL_MINUTES,
@@ -953,6 +1060,23 @@ def password_reset_submit(token: str, request: Request, password: str = Form(...
                 "error": "Le password non coincidono.",
                 "token": token,
                 "uid": uid,
+                "display_identity": _user_display_identity(uid),
+                "token_valid": True,
+                "active_page": "password",
+                "ttl_minutes": PASSWORD_RESET_TTL_MINUTES,
+            },
+        )
+
+    password_error = _validate_password_policy(password=password, uid=uid)
+    if password_error:
+        return templates.TemplateResponse(
+            request=request,
+            name="password_reset.html",
+            context={
+                "error": password_error,
+                "token": token,
+                "uid": uid,
+                "display_identity": _user_display_identity(uid),
                 "token_valid": True,
                 "active_page": "password",
                 "ttl_minutes": PASSWORD_RESET_TTL_MINUTES,
@@ -969,6 +1093,7 @@ def password_reset_submit(token: str, request: Request, password: str = Form(...
                 "error": f"Errore reset password: {exc}",
                 "token": token,
                 "uid": uid,
+                "display_identity": _user_display_identity(uid),
                 "token_valid": True,
                 "active_page": "password",
                 "ttl_minutes": PASSWORD_RESET_TTL_MINUTES,

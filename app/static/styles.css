@@ -1,6 +1,6 @@
 :root {
   --page-max-width: 1100px;
-  --layout-min-width: 980px;
+  --layout-min-width: 1030px;
   --bg: #f4f6fb;
   --card: #ffffff;
   --text: #1f2937;
@@ -609,6 +609,46 @@ details summary {
   margin-top: 0.95rem;
 }
 
+.password-policy-checklist {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: #f8fafc;
+  padding: 0.65rem 0.75rem;
+}
+
+.password-policy-title {
+  margin: 0 0 0.4rem 0;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.password-policy-checklist ul {
+  margin: 0;
+  padding-left: 1rem;
+}
+
+.password-policy-checklist li {
+  margin-bottom: 0.2rem;
+  color: #64748b;
+  list-style: disc;
+}
+
+.password-policy-checklist li.ok {
+  color: #166534;
+}
+
+.password-policy-checklist li.ok::marker {
+  color: #166534;
+}
+
+.password-policy-checklist li.ko {
+  color: #b91c1c;
+}
+
+.password-policy-checklist li.ko::marker {
+  color: #b91c1c;
+}
+
 .password-link-row {
   display: flex;
   align-items: center;
@@ -696,7 +736,7 @@ details summary {
 
 .password-input-wrap input {
   width: 100%;
-  padding-right: 2rem;
+  padding-right: 3.8rem;
 }
 
 .password-reload-btn {
@@ -717,6 +757,37 @@ details summary {
 
 .password-reload-btn:hover {
   background: #cfd8e3;
+}
+
+.password-policy-btn {
+  position: absolute;
+  top: 50%;
+  right: 2.05rem;
+  transform: translateY(-50%);
+  width: 1.35rem;
+  height: 1.35rem;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: #e5e7eb;
+  color: #334155;
+  padding: 0;
+  line-height: 1;
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.password-policy-btn:hover {
+  background: #cfd8e3;
+}
+
+.policy-list {
+  margin: 0 0 0.9rem 1rem;
+  padding: 0;
+  color: #334155;
+}
+
+.policy-list li {
+  margin-bottom: 0.3rem;
 }
 
 .form-section {

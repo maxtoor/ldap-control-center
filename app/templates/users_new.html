@@ -1,37 +1,38 @@
 {% extends "base.html" %}
 
 {% block content %}
+{% set fv = form_values|default({}) %}
 <section class="card">
   <div class="section-head">
     <h2>Crea nuovo utente</h2>
     <a class="action-link" href="/users">Vai alla lista</a>
   </div>
-  <form method="post" action="/users" class="user-form" autocomplete="off">
+  <form method="post" action="/users" class="user-form" autocomplete="off" data-lpignore="true">
     <fieldset class="form-section">
       <legend>1. Informazioni Identificative</legend>
       <div class="grid-form">
-        <label>Nome utente <input name="uid" required /></label>
-        <label>Nome <input name="given_name" required /></label>
-        <label>Cognome <input name="sn" required /></label>
+        <label>Nome utente <input name="uid" value="{{ fv.uid|default('') }}" required /></label>
+        <label>Nome <input name="given_name" value="{{ fv.given_name|default('') }}" required /></label>
+        <label>Cognome <input name="sn" value="{{ fv.sn|default('') }}" required /></label>
       </div>
     </fieldset>
 
     <fieldset class="form-section">
       <legend>2. Informazioni Professionali e Affiliazione</legend>
       <div class="grid-form">
-        <label>Tipologia rapporto <input name="employee_type" placeholder="es. Ricercatore TD" /></label>
-        <label>Qualifica/Mansione <input name="title" /></label>
-        <label>Sede di lavoro <input name="office_name" /></label>
+        <label>Tipologia rapporto <input name="employee_type" value="{{ fv.employee_type|default('') }}" placeholder="es. Ricercatore TD" /></label>
+        <label>Qualifica/Mansione <input name="title" value="{{ fv.title|default('') }}" /></label>
+        <label>Sede di lavoro <input name="office_name" value="{{ fv.office_name|default('') }}" /></label>
       </div>
     </fieldset>
 
     <fieldset class="form-section">
       <legend>3. Contatti e Reperibilita</legend>
       <div class="grid-form">
-        <label>Email istituzionale <input type="email" name="mail" required /></label>
-        <label>Email privata <input type="email" name="personal_email" /></label>
-        <label>Telefono ufficio <input name="telephone_number" /></label>
-        <label>Cellulare <input name="mobile" /></label>
+        <label>Email istituzionale <input type="email" name="mail" value="{{ fv.mail|default('') }}" required /></label>
+        <label>Email privata <input type="email" name="personal_email" value="{{ fv.personal_email|default('') }}" /></label>
+        <label>Telefono ufficio <input name="telephone_number" value="{{ fv.telephone_number|default('') }}" /></label>
+        <label>Cellulare <input name="mobile" value="{{ fv.mobile|default('') }}" /></label>
       </div>
     </fieldset>
 
@@ -41,32 +42,77 @@
         <label>
           Stato utente
           <select name="user_status">
-            <option value="">Seleziona stato</option>
-            <option value="Attivo">Attivo</option>
-            <option value="Cessato">Cessato</option>
-            <option value="Sospeso">Sospeso</option>
+            <option value="" {% if not fv.user_status %}selected{% endif %}>Seleziona stato</option>
+            <option value="Attivo" {% if fv.user_status == "Attivo" %}selected{% endif %}>Attivo</option>
+            <option value="Cessato" {% if fv.user_status == "Cessato" %}selected{% endif %}>Cessato</option>
+            <option value="Sospeso" {% if fv.user_status == "Sospeso" %}selected{% endif %}>Sospeso</option>
           </select>
         </label>
-        <label>Data inizio rapporto <input type="date" name="employment_start" /></label>
-        <label>Data fine rapporto <input type="date" name="employment_end" /></label>
+        <label>Data inizio rapporto <input type="date" name="employment_start" value="{{ fv.employment_start|default('') }}" /></label>
+        <label>Data fine rapporto <input type="date" name="employment_end" value="{{ fv.employment_end|default('') }}" /></label>
         <label>
           Password
           <div class="password-input-wrap">
-            <input id="new-user-password" type="text" name="password" required />
+            <input
+              id="new-user-password"
+              type="text"
+              name="password"
+              required
+              autocomplete="new-password"
+              data-bwignore="true"
+              data-1p-ignore="true"
+              data-lpignore="true"
+              autocapitalize="off"
+              autocorrect="off"
+              spellcheck="false"
+            />
+            <button type="button" id="password-policy-btn" class="password-policy-btn" aria-label="Mostra policy password" title="Mostra policy password">i</button>
             <button type="button" id="regen-password-btn" class="password-reload-btn" aria-label="Rigenera password" title="Rigenera password">↻</button>
           </div>
         </label>
-        <label class="full-row">Note <input name="notes" /></label>
+        <label class="full-row">Note <input name="notes" value="{{ fv.notes|default('') }}" /></label>
       </div>
     </fieldset>
 
     <button type="submit">Crea utente</button>
   </form>
 </section>
+<div id="password-policy-modal" class="modal-overlay" hidden>
+  <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="password-policy-title">
+    <h3 id="password-policy-title">Policy password</h3>
+    <ul class="policy-list">
+      <li>Lunghezza minima: {{ password_policy_min_length }} caratteri</li>
+      {% if password_policy_require_upper %}
+      <li>Almeno una lettera maiuscola</li>
+      {% endif %}
+      {% if password_policy_require_lower %}
+      <li>Almeno una lettera minuscola</li>
+      {% endif %}
+      {% if password_policy_require_digit %}
+      <li>Almeno un numero</li>
+      {% endif %}
+      {% if password_policy_require_symbol %}
+      <li>Almeno un simbolo ({{ password_policy_symbols }})</li>
+      {% endif %}
+      {% if password_policy_disallow_username %}
+      <li>Non deve contenere il nome utente</li>
+      {% endif %}
+      {% if password_policy_block_common %}
+      <li>Non deve essere una password comune</li>
+      {% endif %}
+    </ul>
+    <div class="modal-actions">
+      <button type="button" id="password-policy-close" class="modal-cancel">Chiudi</button>
+    </div>
+  </div>
+</div>
 <script>
   (() => {
     const passwordInput = document.getElementById("new-user-password");
     const regenButton = document.getElementById("regen-password-btn");
+    const policyButton = document.getElementById("password-policy-btn");
+    const policyModal = document.getElementById("password-policy-modal");
+    const policyClose = document.getElementById("password-policy-close");
     if (!passwordInput || !regenButton) return;
 
     const upper = "ABCDEFGHJKLMNPQRSTUVWXYZ";
@@ -98,6 +144,22 @@
 
     if (!passwordInput.value.trim()) assignPassword();
     regenButton.addEventListener("click", assignPassword);
+
+    if (policyButton && policyModal && policyClose) {
+      const closePolicyModal = () => {
+        policyModal.hidden = true;
+      };
+      policyButton.addEventListener("click", () => {
+        policyModal.hidden = false;
+      });
+      policyClose.addEventListener("click", closePolicyModal);
+      policyModal.addEventListener("click", (event) => {
+        if (event.target === policyModal) closePolicyModal();
+      });
+      document.addEventListener("keydown", (event) => {
+        if (event.key === "Escape" && !policyModal.hidden) closePolicyModal();
+      });
+    }
   })();
 </script>
 {% endblock %}
