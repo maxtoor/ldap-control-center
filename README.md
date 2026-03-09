@@ -20,20 +20,21 @@ Parti del codice sono state sviluppate con supporto Codex.
 1. Crea una directory di lavoro ed entra nella cartella:
 
 ```bash
-mkdir -p ~/projects
-cd ~/projects
+sudo mkdir -p /opt/containers
+cd /opt/containers
 ```
 
 2. Clona il repository ed entra nel progetto:
 
 ```bash
-git clone https://github.com/maxtoor/ldap-control-center.git
+sudo git clone https://github.com/maxtoor/ldap-control-center.git
 cd ldap-control-center
 ```
 
 3. Copia configurazione ambiente:
 
 ```bash
+sudo chown -R "$USER":"$USER" /opt/containers/ldap-control-center
 cp .env.example .env
 ```
 
@@ -154,7 +155,7 @@ docker compose exec app python scripts/check_image_updates.py
 Esempio cron giornaliero (08:00):
 
 ```bash
-0 8 * * * cd /Users/master/Documents/projects/gestan && docker compose exec -T app python scripts/check_image_updates.py >> /Users/master/Documents/projects/gestan/backups/update-check.log 2>&1
+0 8 * * * cd /opt/containers/ldap-control-center && docker compose exec -T app python scripts/check_image_updates.py >> /opt/containers/ldap-control-center/backups/update-check.log 2>&1
 ```
 
 ## Migrazione da vecchio LDAP

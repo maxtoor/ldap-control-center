@@ -53,11 +53,11 @@ ldapwhoami -x -H ldap://127.0.0.1 -D "cn=admin,dc=example,dc=org" -W
 ## 4. Installazione LDAP Control Center
 
 ```bash
-sudo useradd --system --create-home --home /opt/ldap-control-center --shell /usr/sbin/nologin ldapcc
-sudo mkdir -p /opt/ldap-control-center
-sudo chown -R ldapcc:ldapcc /opt/ldap-control-center
+sudo mkdir -p /opt/containers/ldap-control-center
+sudo useradd --system --create-home --home /opt/containers/ldap-control-center --shell /usr/sbin/nologin ldapcc
+sudo chown -R ldapcc:ldapcc /opt/containers/ldap-control-center
 
-cd /opt/ldap-control-center
+cd /opt/containers/ldap-control-center
 sudo -u ldapcc git clone https://github.com/maxtoor/ldap-control-center.git .
 sudo -u ldapcc python3 -m venv .venv
 sudo -u ldapcc .venv/bin/pip install --upgrade pip
@@ -67,8 +67,8 @@ sudo -u ldapcc .venv/bin/pip install -r requirements.txt
 ## 5. Configurazione `.env`
 
 ```bash
-sudo -u ldapcc cp /opt/ldap-control-center/.env.example /opt/ldap-control-center/.env
-sudo -u ldapcc nano /opt/ldap-control-center/.env
+sudo -u ldapcc cp /opt/containers/ldap-control-center/.env.example /opt/containers/ldap-control-center/.env
+sudo -u ldapcc nano /opt/containers/ldap-control-center/.env
 ```
 
 Valori minimi da aggiornare:
@@ -105,9 +105,9 @@ After=network.target
 [Service]
 User=ldapcc
 Group=ldapcc
-WorkingDirectory=/opt/ldap-control-center
-EnvironmentFile=/opt/ldap-control-center/.env
-ExecStart=/opt/ldap-control-center/.venv/bin/uvicorn app.main:app --host 127.0.0.1 --port 8000
+WorkingDirectory=/opt/containers/ldap-control-center
+EnvironmentFile=/opt/containers/ldap-control-center/.env
+ExecStart=/opt/containers/ldap-control-center/.venv/bin/uvicorn app.main:app --host 127.0.0.1 --port 8000
 Restart=always
 RestartSec=3
 
@@ -247,7 +247,7 @@ curl -I https://ldapadmin.tuodominio.it
 ## 12. Aggiornamento applicazione
 
 ```bash
-cd /opt/ldap-control-center
+cd /opt/containers/ldap-control-center
 sudo -u ldapcc git pull
 sudo -u ldapcc .venv/bin/pip install -r requirements.txt
 sudo systemctl restart ldapcc
