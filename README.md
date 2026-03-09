@@ -17,7 +17,21 @@ Parti del codice sono state sviluppate con supporto Codex.
 
 ## Avvio rapido
 
-1. Copia configurazione ambiente:
+1. Crea una directory di lavoro ed entra nella cartella:
+
+```bash
+mkdir -p ~/projects
+cd ~/projects
+```
+
+2. Clona il repository ed entra nel progetto:
+
+```bash
+git clone https://github.com/maxtoor/ldap-control-center.git
+cd ldap-control-center
+```
+
+3. Copia configurazione ambiente:
 
 ```bash
 cp .env.example .env
@@ -56,13 +70,19 @@ Policy password applicativa (configurabile da `.env`):
 - `PASSWORD_POLICY_DISALLOW_USERNAME`
 - `PASSWORD_POLICY_BLOCK_COMMON`
 
-2. Avvia stack:
+4. Avvia stack:
 
 ```bash
 docker compose up --build -d
 ```
 
-3. Accedi ai servizi:
+5. Verifica che i container siano in esecuzione:
+
+```bash
+docker compose ps
+```
+
+6. Accedi ai servizi:
 - Login app: `http://localhost:8000/login`
 - App utenti (lista): `http://localhost:8000/users`
 - App utenti (creazione): `http://localhost:8000/users/new`
