@@ -11,10 +11,6 @@ Applicazione di gestione utenti basata su OpenLDAP con:
 - Gestione gruppi LDAP (`groupOfNames`) da UI
 - Script di migrazione utenti (e opzionalmente gruppi) da LDAP legacy
 
-## Nota di trasparenza
-
-Parti del codice sono state sviluppate con supporto Codex.
-
 ## Avvio rapido
 
 1. Crea una directory di lavoro ed entra nella cartella:
@@ -231,3 +227,7 @@ Flusso:
 
 Il link viene inviato via email all'indirizzo istituzionale LDAP dell'utente.
 Se SMTP non e configurato o l'utente non ha una mail, il sistema risponde comunque in modo neutro e registra il dettaglio nei log.
+
+## Nota di trasparenza
+
+Parti del codice sono state sviluppate con supporto Codex.
